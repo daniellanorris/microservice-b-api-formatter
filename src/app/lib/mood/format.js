@@ -1,2 +1,24 @@
-// communicates with external api (or just handles any formatting logic that needs
-// to be handled), and is then called by the route handler
+export function formatMoodRequest(data){
+
+    const {
+        mood_name,
+        note
+    } = data;
+
+
+    return {
+        url:
+        "https://router.huggingface.co/hf-inference/models/j-hartmann/emotion-english-distilroberta-base",
+
+        method: "POST",
+
+        headers: {
+            "Content-Type": "application/json"
+        },
+
+        body: {
+            inputs:
+            `Mood: ${mood_name}. Note: ${note}`
+        }
+    };
+}

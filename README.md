@@ -1,36 +1,101 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Movie Request Formatter Microservice
 
-## Getting Started
+Formats API requests sent to the microservice endpoint(s) into HTTP or cURL syntax given an endpoint, method, and parameters. 
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## How to REQUEST data from the microservice
+
+Send a `POST` request to `/api/format` with a JSON body containing the following fields:
+
+| Field        | Type     | Required | Description                                      |
+|--------------|----------|----------|--------------------------------------------------|
+| `endpoint`   | string   | yes      | TMDB API endpoint path (e.g. `/movie/{movie_id}`)|
+| `method`     | string   | yes      | HTTP method (`GET`, `POST`, etc.)                |
+| `language`   | string   | yes      | Output format: `"http"` or `"curl"`              |
+| `parameters` | array    | no       | List of parameter objects (see below)            |
+
+Each object in `parameters` has:
+
+| Field   | Type   | Description                                      |
+|---------|--------|--------------------------------------------------|
+| `key`   | string | Parameter name                                   |
+| `value` | string | Parameter value                                  |
+| `type`  | string | Either`"query"`, or `"body"`                     |
+
+### Example request (JavaScript)
+
+```js
+const response = await fetch("/api/format", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+        endpoint: "/movie/550",
+        method: "GET",
+        language: "curl",
+        parameters: [
+            { key: "language", value: "en-US", type: "query" }
+        ]
+    })
+});
+
+const data = await response.json();
+console.log(data.result.formatted);
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## How to RECEIVE data from the microservice
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The microservice responds with a JSON object containing:
 
-## Learn More
+| Field            | Type   | Description                                      |
+|------------------|--------|--------------------------------------------------|
+| `result.formatted` | string | The formatted HTTP or cURL request string      |
+| `result.request`   | object | The parsed request object (method, endpoint, body, baseURL) |
 
-To learn more about Next.js, take a look at the following resources:
+### Example response
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```json
+{
+  "result": {
+    "formatted": "curl -X GET \"https://api.themoviedb.org/3/movie/550?language=en-US\"",
+    "request": {
+      "method": "GET",
+      "endpoint": "/movie/550?language=en-US",
+      "body": {},
+      "baseURL": "https://api.themoviedb.org/3"
+    }
+  }
+}
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Error response
 
-## Deploy on Vercel
+If the request fails, the microservice returns:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```json
+{
+  "error": "Failed to format request",
+  "message": "<error details>"
+}
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## UML Sequence Diagram
+(Used mermaid to generate the diagram as an FYI)
+
+```mermaid
+sequenceDiagram
+    participant P as Requesting Program
+    participant R as /api/format route
+    participant F as format.js (lib)
+
+    P->>R: POST /api/{program}/format { endpoint, method, language, parameters }
+    R->>F: format(data)
+    F->>F: buildRequest() - resolves query/body params
+    F->>F: formatHTTP() or formatCurl() based on language
+    F-->>R: { formatted, request }
+    R-->>P: 200 { result: { formatted, request } }
+```

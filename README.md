@@ -27,7 +27,7 @@ Each object in `parameters` has:
 ### Example request (JavaScript)
 
 ```js
-const response = await fetch("/api/format", {
+const response = await fetch("/api/{program}/format", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({

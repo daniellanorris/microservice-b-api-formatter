@@ -1,76 +1,55 @@
-import {format} from "../../../lib/mood/format";
-
-
-const corsHeaders = {
-    "Access-Control-Allow-Origin": "http://localhost:3001",
-    "Access-Control-Allow-Methods": "POST, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type",
-};
-
+import { NextResponse } from "next/server";
+import { format } from "../../../lib/mood/format";
 
 export async function OPTIONS() {
-
-    return new Response(null, {
+    return new NextResponse(null, {
         status: 204,
-        headers: corsHeaders,
+        headers: {
+            "Access-Control-Allow-Origin": "*",
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type",
+        },
     });
-
 }
 
-
-export async function POST(request){
-
-    try{
+export async function POST(request) {
+    try {
 
         const data = await request.json();
 
-
-        if(
-            !data.endpoint ||
-            !data.method
-        ){
-
-            return Response.json(
-                {
-                    error:"Missing required fields"
-                },
-                {
-                    status:400,
-                    headers:corsHeaders
-                }
-            );
-
-        }
-
+        console.log("Received formatting request:", data);
 
         const result = format(data);
 
+        console.log("Formatted result:", result);
 
-        return Response.json(
+        return NextResponse.json(
             {
-                result
+                result: result
             },
             {
-                headers:corsHeaders
+                status: 200,
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                },
             }
         );
 
+    } catch (error) {
 
-    }
+        console.error("Format route error:", error);
 
-    catch(error){
-
-        return Response.json(
+        return NextResponse.json(
             {
-                error:"Failed to format request",
-                message:error.message
+                error: "Failed to format request",
+                message: error.message
             },
             {
-                status:400,
-                headers:corsHeaders
+                status: 500,
+                headers: {
+                    "Access-Control-Allow-Origin": "*",
+                },
             }
         );
-
     }
-
 }

@@ -6,13 +6,14 @@ Formats API requests sent to the microservice endpoint(s) into HTTP or cURL synt
 
 ## How to REQUEST data from the microservice
 
-Send a `POST` request to `/api/format` with a JSON body containing the following fields:
+Send a `POST` request to `/api/{program}/format` with a JSON body containing the following fields:
 
 | Field        | Type     | Required | Description                                      |
 |--------------|----------|----------|--------------------------------------------------|
 | `endpoint`   | string   | yes      | TMDB API endpoint path (e.g. `/movie/{movie_id}`)|
 | `method`     | string   | yes      | HTTP method (`GET`, `POST`, etc.)                |
-| `language`   | string   | yes      | Output format: `"http"` or `"curl"`              |
+| `language`   | string   | yes      | Output format: `"http"`, `"curl"` , `"etc"`             |
+| `bearer`   | string   | yes      | Output format: string for token   |
 | `parameters` | array    | no       | List of parameter objects (see below)            |
 
 Each object in `parameters` has:
@@ -33,8 +34,9 @@ const response = await fetch("/api/format", {
         endpoint: "/movie/550",
         method: "GET",
         language: "curl",
+        bearerToken: "test",
         parameters: [
-            { key: "language", value: "en-US", type: "query" }
+            { key: "test key", testvalue: "test value", type: "body" }
         ]
     })
 });
@@ -58,15 +60,20 @@ The microservice responds with a JSON object containing:
 
 ```json
 {
+  {
   "result": {
-    "formatted": "curl -X GET \"https://api.themoviedb.org/3/movie/550?language=en-US\"",
+    "formatted": "GET https://api.themoviedb.org/3/movie HTTP/1.1\nAuthorization: Bearer test\nAccept: application/json\n\n{\n  \"test key\": \"test value\"\n}",
     "request": {
       "method": "GET",
-      "endpoint": "/movie/550?language=en-US",
-      "body": {},
-      "baseURL": "https://api.themoviedb.org/3"
+      "endpoint": "/movie",
+      "body": {
+        "test key": "test value"
+      },
+      "baseURL": "https://api.themoviedb.org/3",
+      "bearerToken": "test"
     }
   }
+}
 }
 ```
 
@@ -92,7 +99,7 @@ sequenceDiagram
     participant R as /api/format route
     participant F as format.js (lib)
 
-    P->>R: POST /api/{program}/format { endpoint, method, language, parameters }
+    P->>R: POST /api/{program}/format { endpoint, method, language, bearer, parameters }
     R->>F: format(data)
     F->>F: buildRequest() - resolves query/body params
     F->>F: formatHTTP() or formatCurl() based on language

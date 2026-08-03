@@ -1,6 +1,6 @@
 # Movie Request Formatter Microservice
 
-Formats API requests sent to the microservice endpoint(s) into HTTP or cURL syntax given an endpoint, method, and parameters. 
+Formats API requests sent to the microservice endpoint(s) into HTTP, cURL, etc. syntax given an endpoint, method, and parameters. 
 
 ---
 

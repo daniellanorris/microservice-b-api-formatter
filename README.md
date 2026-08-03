@@ -1,4 +1,4 @@
-# Movie Request Formatter Microservice
+# API Request Formatter Microservice
 
 Formats API requests sent to the microservice endpoint(s) into HTTP, cURL, etc. syntax given an endpoint, method, and parameters. 
 

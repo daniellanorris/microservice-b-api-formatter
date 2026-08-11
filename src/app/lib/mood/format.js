@@ -1,8 +1,9 @@
-const baseURL = 
-"https://router.huggingface.co";
+// communicates with external api (or just handles any formatting logic that needs
+// to be handled), and is then called by the route handler
 
-export function format(data){
+const baseURL = "https://router.huggingface.co";
 
+export function format(data) {
     const {
         endpoint,
         method,
@@ -10,45 +11,16 @@ export function format(data){
         parameters = []
     } = data;
 
-
     const request = buildRequest(
         endpoint,
         method,
         parameters
     );
 
-
-    let formatted;
-
-
-    switch(language){
-
-        case "http":
-            formatted = formatHTTP(request);
-            break;
-
-
-        case "curl":
-            formatted = formatCurl(request);
-            break;
-
-
-        case "python":
-            formatted = formatPython(request);
-            break;
-
-
-        case "javascript":
-            formatted = formatJavascript(request);
-            break;
-
-
-        default:
-            throw new Error(
-                `Unsupported language: ${language}`
-            );
-    }
-
+    const formatted = formatByLanguage(
+        language,
+        request
+    );
 
     return {
         formatted,
@@ -56,144 +28,124 @@ export function format(data){
     };
 }
 
-function buildRequest(endpoint, method, parameters){
+function formatByLanguage(language, request) {
+    switch (language) {
+        case "http":
+            return formatHTTP(request);
 
+        case "curl":
+            return formatCurl(request);
 
-    const body = {};
+        case "python":
+            return formatPython(request);
 
+        case "javascript":
+            return formatJavascript(request);
 
-    parameters.forEach(
-        ({key, value, type}) => {
+        default:
+            throw new Error(
+                `Unsupported language: ${language}`
+            );
+    }
+}
 
-
-            if(type === "body"){
-
-                body[key] = value;
-
-            }
-
-        }
-    );
-
+function buildRequest(endpoint, method, parameters) {
+    const body = buildBody(parameters);
 
     return {
-
         method,
-
         endpoint,
-
         url: `${baseURL}${endpoint}`,
-
         body,
-
         baseURL,
-
-        headers:{
-            "Content-Type":
-            "application/json"
+        headers: {
+            "Content-Type": "application/json"
         }
-
     };
-
 }
 
-export function formatCurl(request){
+function buildBody(parameters) {
+    const body = {};
 
-    const {
-        method,
-        endpoint,
-        body,
-        headers,
-        baseURL
-    } = request;
-
-
-    let result =
-    `curl -X ${method} "${baseURL}${endpoint}"`;
-
-
-    Object.entries(headers).forEach(
-        ([key,value]) => {
-
-            result +=
-            ` \\\n  -H "${key}: ${value}"`;
-
+    parameters.forEach(
+        ({ key, value, type }) => {
+            if (type === "body") {
+                body[key] = value;
+            }
         }
     );
 
-
-    if(Object.keys(body).length > 0){
-
-        result +=
-        ` \\\n  -d '${JSON.stringify(body)}'`;
-
-    }
-
-
-    return result;
-
+    return body;
 }
 
-export function formatHTTP(request){
-
+export function formatCurl(request) {
     const {
         method,
-        endpoint,
+        url,
         body,
-        headers,
-        baseURL
+        headers
     } = request;
 
-
-    let result =
-    `${method} ${baseURL}${endpoint} HTTP/1.1`;
-
+    let formattedRequest =
+        `curl -X ${method} "${url}"`;
 
     Object.entries(headers).forEach(
-        ([key,value]) => {
-
-            result +=
-            `\n${key}: ${value}`;
-
+        ([key, value]) => {
+            formattedRequest +=
+                ` \\\n  -H "${key}: ${value}"`;
         }
     );
 
-
-    if(Object.keys(body).length > 0){
-
-        result +=
-        `\n\n${JSON.stringify(body, null, 2)}`;
-
+    if (Object.keys(body).length > 0) {
+        formattedRequest +=
+            ` \\\n  -d '${JSON.stringify(body)}'`;
     }
 
-
-    return result;
-
+    return formattedRequest;
 }
 
-export function formatPython(request){
-
+export function formatHTTP(request) {
     const {
         method,
-        endpoint,
+        url,
         body,
-        headers,
-        baseURL
+        headers
     } = request;
 
+    let formattedRequest =
+        `${method} ${url} HTTP/1.1`;
+
+    Object.entries(headers).forEach(
+        ([key, value]) => {
+            formattedRequest +=
+                `\n${key}: ${value}`;
+        }
+    );
+
+    if (Object.keys(body).length > 0) {
+        formattedRequest +=
+            `\n\n${JSON.stringify(body, null, 2)}`;
+    }
+
+    return formattedRequest;
+}
+
+export function formatPython(request) {
+    const {
+        method,
+        url,
+        body,
+        headers
+    } = request;
 
     return `
 import requests
 
-
-url = "${baseURL}${endpoint}"
-
+url = "${url}"
 
 headers = ${JSON.stringify(headers, null, 4)}
 
-
 data = ${JSON.stringify(body, null, 4)}
-
 
 response = requests.request(
     "${method}",
@@ -202,26 +154,21 @@ response = requests.request(
     json=data
 )
 
-
 print(response.json())
 `;
-
 }
 
-export function formatJavascript(request){
-
+export function formatJavascript(request) {
     const {
         method,
-        endpoint,
+        url,
         body,
-        headers,
-        baseURL
+        headers
     } = request;
-
 
     return `
 const response = await fetch(
-    "${baseURL}${endpoint}",
+    "${url}",
     {
         method: "${method}",
 
@@ -233,11 +180,8 @@ const response = await fetch(
     }
 );
 
-
 const data = await response.json();
-
 
 console.log(data);
 `;
-
 }

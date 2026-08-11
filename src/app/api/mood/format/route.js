@@ -1,66 +1,67 @@
 // this will handle requests coming from the test program or main program
+import { NextResponse } from "next/server";
 import { format } from "../../../lib/mood/format";
 
 const corsHeaders = {
-    "Access-Control-Allow-Origin": "http://localhost:3001",
+    "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type",
 };
 
 export async function OPTIONS() {
-    return new Response(null, {
+    return new NextResponse(null, {
         status: 204,
         headers: corsHeaders,
     });
 }
 
 function createSuccessResponse(formattedRequest) {
-    return Response.json(
+    return NextResponse.json(
         {
             result: formattedRequest
         },
         {
             status: 200,
-            headers: corsHeaders
+            headers: corsHeaders,
         }
     );
 }
 
-function createErrorResponse(error, status = 400) {
-    return Response.json(
+function createErrorResponse(error) {
+    return NextResponse.json(
         {
             error: "Failed to format request",
             message: error.message
         },
         {
-            status,
-            headers: corsHeaders
+            status: 500,
+            headers: corsHeaders,
         }
     );
 }
 
 export async function POST(request) {
     try {
-        const formattingRequest = await request.json();
+        const data = await request.json();
 
-        console.log("Received formatting request:", formattingRequest);
+        console.log("Received formatting request:", data);
 
         if (
-            !formattingRequest.endpoint ||
-            !formattingRequest.method
+            !data.endpoint ||
+            !data.method
         ) {
-            return Response.json(
+            return NextResponse.json(
                 {
                     error: "Missing required fields"
                 },
                 {
                     status: 400,
-                    headers: corsHeaders
+                    headers: corsHeaders,
                 }
             );
         }
 
-        const formattedRequest = format(formattingRequest);
+        const formattedRequest = format(data);
 
         console.log("Formatted result:", formattedRequest);
 
